@@ -1,0 +1,224 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>BabyLogs Dashboard (Chart.js)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root { --bg:#0b1020; --card:#151a2e; --fg:#e8ecff; --muted:#9aa3c7; --accent:#7aa2ff; --ok:#72e06a; --warn:#ffd166; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto; background:var(--bg); color:var(--fg); }
+    header { padding:16px 20px; border-bottom:1px solid #222a45; display:flex; align-items:center; gap:12px; justify-content:space-between;}
+    .brand { font-weight:700; }
+    .app { max-width:1200px; margin: 24px auto; padding: 0 16px; }
+    .grid { display:grid; gap:16px; grid-template-columns:1fr; }
+    @media(min-width:900px){ .grid{ grid-template-columns: 1.2fr .8fr; } }
+    .card { background:var(--card); border:1px solid #222a45; border-radius:16px; padding:16px; box-shadow:0 6px 28px rgba(0,0,0,.25); }
+    .row { display:flex; gap:12px; align-items:center; justify-content:space-between; }
+    .pill { background:#222a45; padding:6px 10px; border-radius:999px; font-size:12px; color:var(--muted); }
+    .kpis { display:grid; gap:12px; grid-template-columns:1fr 1fr; margin-bottom:12px; }
+    @media(min-width:640px){ .kpis{ grid-template-columns: repeat(4, 1fr); } }
+    .k { background:#12172a; border:1px solid #222a45; border-radius:14px; padding:12px; }
+    .k .v { font-size:22px; font-weight:700; }
+    .muted { color:var(--muted); font-size:12px; }
+    .foot { margin-top:10px; color:var(--muted); font-size:12px; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:8px 10px; border-bottom:1px solid #222a45; font-size:14px; }
+    th { text-align:left; color:var(--muted); font-weight:600; }
+    .sel { background:#12172a; color:var(--fg); border:1px solid #222a45; border-radius:10px; padding:6px 8px; }
+
+    /* ▼▼ 縦伸び対策：ラッパー固定 + キャンバスは100%フィット ▼▼ */
+    .chart-h { height:360px; }               /* ラッパー高さを固定 */
+    canvas { width:100%; height:100%; display:block; } /* キャンバスはラッパーに追従 */
+    /* ▲▲ ここまで ▲▲ */
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">BabyLogs Dashboard</div>
+    <div class="muted">（架空データ／認証なし／Chart.js）</div>
+  </header>
+
+  <div class="app">
+    <div class="row" style="margin-bottom:12px;">
+      <div class="pill">期間：
+        <select id="range" class="sel">
+          <option value="7d">7日</option>
+          <option value="14d">14日</option>
+          <option value="30d">30日</option>
+        </select>
+      </div>
+      <div id="rangeLabel" class="muted"></div>
+    </div>
+
+    <div class="kpis">
+      <div class="k"><div class="muted">今日の記録</div><div id="kToday" class="v">-</div></div>
+      <div class="k"><div class="muted">1日平均</div><div id="kAvg" class="v">-</div></div>
+      <div class="k"><div class="muted">最多日</div><div id="kMostDay" class="v">-</div></div>
+      <div class="k"><div class="muted">最多日／件</div><div id="kMostCount" class="v">-</div></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="row"><div style="font-weight:600;">日別推移（合計）</div></div>
+        <div class="chart-h"><canvas id="lineChart"></canvas></div>  <!-- ラッパー追加 -->
+        <div class="foot">折れ線：合計件数の推移</div>
+      </div>
+
+      <div class="card">
+        <div class="row"><div style="font-weight:600;">種別の内訳</div></div>
+        <div class="chart-h"><canvas id="pieChart"></canvas></div>   <!-- ラッパー追加 -->
+        <div class="foot">期間内総数の内訳（ミルク／うんち／しっこ／ねんね）</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="row"><div style="font-weight:600;">直近の記録（サンプル）</div></div>
+      <div style="overflow:auto;">
+        <table>
+          <thead><tr><th>日時</th><th>種別</th><th>メモ</th></tr></thead>
+          <tbody id="recent"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentRange = '7d';
+    let lineChart, pieChart;
+
+    window.addEventListener('load', () => {
+      document.getElementById('range').addEventListener('change', (e) => {
+        currentRange = e.target.value;
+        fetchAndDraw();
+      });
+      fetchAndDraw();
+    });
+
+    function fetchAndDraw() {
+      // GAS 環境以外での誤開防止
+      if (!(window.google && google.script && google.script.run)) {
+        console.error('google.script.run is not available.');
+        document.getElementById('rangeLabel').textContent =
+          'エラー: このページは Apps Script の Web アプリURLから開いてください。';
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(v => {
+          console.log('raw payload:', v);
+          drawAll(v);
+        })
+        .withFailureHandler(err => {
+          const m = (err && (err.message || String(err))) || 'Unknown';
+          const stack = err && err.stack ? '\n' + err.stack : '';
+          console.error('getDashboardData error:', m, stack);
+          document.getElementById('rangeLabel').textContent = 'エラー: ' + m;
+          alert('データ取得に失敗：' + m);
+        })
+        .getDashboardData(currentRange);
+    }
+
+    function drawAll(payload) {
+      if (!payload || !payload.daysSeries) {
+        console.error('Invalid payload', payload);
+        document.getElementById('rangeLabel').textContent =
+          'エラー: データが取得できませんでした。';
+        return;
+      }
+
+      const series = payload.daysSeries;
+      const totals = payload.totals;
+      const k = payload.kpis;
+
+      // KPI
+      document.getElementById('kToday').textContent = k.todayCount;
+      document.getElementById('kAvg').textContent = k.avgPerDay;
+      document.getElementById('kMostDay').textContent = k.mostActiveDayLabel;
+      document.getElementById('kMostCount').textContent = k.mostActiveCount;
+
+      // 期間ラベル
+      if (series.length) {
+        const first = series[0].label;
+        const last  = series[series.length-1].label;
+        document.getElementById('rangeLabel').textContent = `${first} – ${last}（${payload.range}日）`;
+      } else {
+        document.getElementById('rangeLabel').textContent = `（${payload.range}日）`;
+      }
+
+      // 直近テーブル（atMs を使用）
+      const tbody = document.getElementById('recent');
+      tbody.innerHTML = '';
+      (payload.recent || []).forEach(r => {
+        const tr = document.createElement('tr');
+        const dt = new Date(r.atMs);
+        tr.innerHTML = `<td>${fmtDateTime(dt)}</td><td>${r.kind}</td><td>${r.note || ''}</td>`;
+        tbody.appendChild(tr);
+      });
+
+      // チャート再描画（既存があれば破棄）
+      if (lineChart) lineChart.destroy();
+      if (pieChart)  pieChart.destroy();
+
+      const labels = series.map(d => d.label);
+      const sums   = series.map(d => d.sum);
+
+      // 折れ線
+      const lineCtx = document.getElementById('lineChart').getContext('2d');
+      lineChart = new Chart(lineCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: '合計',
+            data: sums,
+            tension: 0.3,
+            fill: false,
+            borderColor: '#7aa2ff',
+            pointBackgroundColor: '#7aa2ff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,   // ← ラッパー（.chart-h）に従う
+          resizeDelay: 200,             // 任意：過剰リサイズ抑制
+          animation: { duration: 0 },   // 任意：描画負荷を下げる
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#9aa3c7' }, grid: { color: '#222a45' } },
+            y: { ticks: { color: '#9aa3c7' }, grid: { color: '#222a45' }, beginAtZero: true }
+          }
+        }
+      });
+
+      // ドーナツ
+      const pieCtx = document.getElementById('pieChart').getContext('2d');
+      pieChart = new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['ミルク','うんち','しっこ','ねんね'],
+          datasets: [{
+            data: [totals.milk, totals.poop, totals.pee, totals.sleep],
+            backgroundColor: ['#6fe3ff','#ffd166','#72e06a','#b388eb']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,   // ← ラッパー（.chart-h）に従う
+          resizeDelay: 200,
+          animation: { duration: 0 },
+          plugins: { legend: { position: 'bottom', labels: { color: '#e8ecff' } } },
+          cutout: '55%'
+        }
+      });
+    }
+
+    function fmtDateTime(d) {
+      const pad = n => ('0'+n).slice(-2);
+      return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+  </script>
+</body>
+</html>
