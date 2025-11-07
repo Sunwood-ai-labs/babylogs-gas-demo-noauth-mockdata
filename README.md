@@ -1,7 +1,7 @@
 <h1 align="center">BabyLogs Dashboard (Chart.js / No Auth / Mock Data)</h1>
 
 <p align="center">
-  <img src="./Whisk_1694e5093e1b8b084de45b8b744fc6b4dr.jpeg" alt="BabyLogs Dashboard header illustration" width="100%">
+  <img src="./Whisk_b6b415651f695a797fb4a34de813c2b9dr.jpeg" alt="BabyLogs Dashboard header illustration" width="100%">
 </p>
 
 <p align="center">
