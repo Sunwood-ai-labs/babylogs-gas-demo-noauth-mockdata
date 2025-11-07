@@ -1,8 +1,28 @@
-# BabyLogs Dashboard (Chart.js / No Auth / Mock Data)
+<h1 align="center">BabyLogs Dashboard (Chart.js / No Auth / Mock Data)</h1>
+
+<p align="center">
+  <img src="./Whisk_1694e5093e1b8b084de45b8b744fc6b4dr.jpeg" alt="BabyLogs Dashboard header illustration" width="480">
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Google%20Apps%20Script-4285F4?logo=googlecloud&logoColor=white" alt="Google Apps Script badge">
+  <img src="https://img.shields.io/badge/Chart.js-FF6384?logo=chartdotjs&logoColor=white" alt="Chart.js badge">
+  <img src="https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white" alt="HTML5 badge">
+  <img src="https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white" alt="CSS3 badge">
+</p>
 
 BabyLogs Dashboard は、Google Apps Script (GAS) 上で動作するサンプル Web アプリです。実際の育児ログではなく、架空データを生成して Chart.js で可視化します。認証が不要な公開 Web アプリとして動かせるため、GAS でのダッシュボード構築例や Chart.js の活用方法を学ぶ教材として利用できます。
 
-## 主な特徴
+## 📚 目次
+
+- [✨ 主な特徴](#-主な特徴)
+- [🗂 リポジトリ構成](#-リポジトリ構成)
+- [🚀 セットアップ手順](#-セットアップ手順)
+- [🧭 使い方](#-使い方)
+- [❓ よくある質問](#-よくある質問)
+- [📄 ライセンス](#-ライセンス)
+
+## ✨ 主な特徴
 
 - 🍼 **架空データの自動生成**: ミルク / うんち / しっこ / ねんねの 4 種別を日付ごとにランダム生成。
 - 📊 **Chart.js によるビジュアライズ**: 折れ線グラフで日別推移、円グラフで種別内訳を表示。
@@ -10,7 +30,7 @@ BabyLogs Dashboard は、Google Apps Script (GAS) 上で動作するサンプル
 - 📋 **直近ログのテーブル表示**: 直近 15 件のレコードをテーブル形式で確認可能。
 - 🔒 **認証なしで公開可能**: 架空データのみを扱うため、誰でも閲覧できる設定にしても安全です。
 
-## リポジトリ構成
+## 🗂 リポジトリ構成
 
 | ファイル | 役割 |
 | --- | --- |
@@ -18,7 +38,7 @@ BabyLogs Dashboard は、Google Apps Script (GAS) 上で動作するサンプル
 | `index.html` | クライアント側 UI。Chart.js を使ったグラフ描画、KPI 更新、直近ログテーブルを担当します。 |
 | `appsscript.json` | GAS プロジェクト設定ファイル。スクリプト プロパティや Web アプリ設定を管理します。 |
 
-## セットアップ手順
+## 🚀 セットアップ手順
 
 1. **Google Apps Script プロジェクトを作成**
    - [Google Apps Script](https://script.google.com/) にアクセスし、新しいプロジェクトを作成します。
@@ -37,14 +57,14 @@ BabyLogs Dashboard は、Google Apps Script (GAS) 上で動作するサンプル
    - 「アクセスできるユーザー」を「全員」に設定すると認証なしで閲覧できます。
    - デプロイ後に表示される Web アプリ URL を開き、ダッシュボードを確認します。
 
-## 使い方
+## 🧭 使い方
 
 - 画面右上のセレクトボックスで表示期間を 7 / 14 / 30 日に切り替えられます。
 - KPI カードで今日の件数や平均値、最多日の情報をチェックできます。
 - 折れ線グラフは合計件数の推移、円グラフは種別内訳を示します。
 - ページ下部のテーブルには直近のサンプルデータが表示されます。
 
-## よくある質問
+## ❓ よくある質問
 
 ### Q. 本番データで使っても大丈夫？
 A. このプロジェクトは学習用サンプルです。`generateFakeLogs_()` でランダムデータを生成しており、実データは扱っていません。本番用途で使う場合は、認証やデータ取得部分を実装し直してください。
@@ -52,6 +72,6 @@ A. このプロジェクトは学習用サンプルです。`generateFakeLogs_()
 ### Q. 認証を付けたいときは？
 A. Google Apps Script の Web アプリは、`AccessToken` を利用した認証や、スプレッドシート / Firestore 等のデータソース連携が可能です。本サンプルでは簡潔さを優先して認証を省いています。
 
-## ライセンス
+## 📄 ライセンス
 
 このリポジトリにはライセンスファイルが含まれていません。必要に応じてご自身の利用形態に合わせたライセンスを設定してください。
